@@ -4,7 +4,7 @@ FROM php:7.4-apache
 RUN docker-php-ext-install mysqli pdo pdo_mysql
 
 # Apache 설정 (필요 시)
-# COPY custom-apache.conf /etc/apache2/sites-available/000-default.conf
+COPY ./custom-apache.conf /etc/apache2/sites-available/000-default.conf
 # RUN a2enmod rewrite
 
 # 웹 애플리케이션 코드를 컨테이너로 복사
