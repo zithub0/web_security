@@ -7,6 +7,9 @@ RUN docker-php-ext-install mysqli pdo pdo_mysql
 COPY ./custom-apache.conf /etc/apache2/sites-available/000-default.conf
 # RUN a2enmod rewrite
 
+# PHP 설정 파일 복사 (RFI 테스트를 위한 allow_url_include 활성화)
+COPY ./php.ini /usr/local/etc/php/php.ini
+
 # 웹 애플리케이션 코드를 컨테이너로 복사
 COPY ./web /var/www/html/
 

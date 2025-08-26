@@ -7,32 +7,85 @@
 ---
 ## 프로젝트 구조
 
-* **`docker-compose.yml`**: 이 파일은 여러 개의 Docker 컨테이너(PHP/Apache 및 MySQL)로 구성된 애플리케이션을 정의하고 오케스트레이션합니다.
-* **`php-apache/`**:
-    * **`Dockerfile`**: 커스텀 PHP 및 Apache Docker 이미지를 빌드하는 방법을 정의합니다. 필요한 PHP 확장이나 Apache 설정이 포함됩니다.
-    * **`web/`**: 이 디렉토리에 PHP 웹 애플리케이션 코드가 위치합니다. `index.php` 파일 및 각종 API 엔드포인트 등을 이곳에 작성합니다.
-* **`mysql/`**: MySQL 서비스를 나타내는 디렉토리입니다.
-    * *(데이터는 Docker Volume에 저장)*: MySQL 데이터는 Docker 볼륨을 사용하여 컨테이너 외부에서 영속적으로 저장됩니다. 이는 MySQL 컨테이너가 제거되거나 업데이트되더라도 데이터가 안전하게 유지됨을 의미합니다.
+```
+web_security/
+├── docker-compose.yml          # Docker 컨테이너 오케스트레이션 설정
+├── Dockerfile                  # 커스텀 PHP/Apache 이미지 빌드 설정
+├── custom-apache.conf          # Apache 웹서버 설정
+├── php.ini                     # PHP 설정 (RFI 테스트용 allow_url_include 활성화)
+├── init.sql                    # MySQL 초기 데이터베이스 스키마 및 데이터
+├── history/                    # 작업 이력 문서
+└── web/                        # 웹 애플리케이션 소스 코드
+    ├── index.php               # 메인 대시보드 페이지
+    ├── login.php               # 로그인 페이지
+    ├── logout.php              # 로그아웃 처리
+    ├── register.php            # 회원가입 페이지
+    ├── security.php            # 🔒 보안 설정 제어판
+    ├── upload.php              # 파일 업로드 페이지
+    ├── file_viewer.php         # 파일 뷰어 (LFI/RFI 취약점)
+    ├── includes/               # 공통 라이브러리
+    │   ├── auth.php           # 인증 관련 함수
+    │   └── db.php             # 데이터베이스 연결 설정
+    ├── board/                  # 게시판 관련 페이지
+    │   ├── list.php           # 게시글 목록
+    │   ├── view.php           # 게시글 상세보기
+    │   └── write.php          # 게시글 작성
+    ├── api/                    # REST API 엔드포인트
+    │   ├── auth.php           # 인증 API
+    │   ├── board.php          # 게시판 API
+    │   ├── notice.php         # 공지사항 API
+    │   └── admin.php          # 관리자 API
+    └── uploads/                # 업로드된 파일 저장소
+        ├── a.jpg              # 테스트 이미지
+        ├── phpinfo.php        # PHP 정보 확인용
+        ├── shell.php          # 테스트용 웹셸 (⚠️ 보안 위험)
+        └── shell.phtml        # 웹셸 복사본
+```
 
 
 ---
 
 
-## ✅ 파일 설명
-- **index.php**: 메인 페이지
-- **login.php / register.php**: 인증 기능 구현
-- **board.php**: 일반 게시판 (XSS, CSRF, SQL Injection 실습 가능)
-- **upload.php**: 파일 업로드 기능 (RCE, Path Traversal 실습)
-- **file_viewer.php**: 파일 뷰어 (LFI, RFI 실습 가능)
-- **api/**:
-  - `auth.php`: JWT 로그인/회원가입 API
-  - `board.php`: 게시판 CRUD API
-  - `notice.php`: 공지사항 조회 API (리스트, 상세 보기)
-  - `admin.php`: 관리자 API (공지 작성, 수정, 삭제)
-- **includes/**: 공통 코드 (DB 연결, 함수, 세션 관리)
-- **uploads/**: 업로드된 파일 저장 (취약한 접근 제어 테스트 가능)
-- **config/**: 환경설정 파일 (.env를 통한 DB 인증 정보 노출 가능)
-- **logs/**: 접근/에러 로그 (로그 미비 취약점 실습)
+## ✅ 주요 파일 설명
+
+### 🔒 보안 관련 파일
+- **`security.php`**: **중앙 보안 제어판** - 모든 보안 기능을 토글로 제어
+  - XSS, CSRF, SQL Injection, LFI, RFI 대책 설정
+  - 실시간 보안 상태 확인 및 제어
+- **`file_viewer.php`**: **파일 뷰어** (LFI/RFI 취약점 실습)
+  - 디렉토리 트레버셜 공격 테스트
+  - 원격 파일 포함 공격 테스트
+  - 보안 설정에 따른 동적 차단
+
+### 🌐 웹 페이지
+- **`index.php`**: 메인 대시보드 - 프로젝트 개요 및 취약점 목록
+- **`login.php`**: 로그인 페이지 (권한별 계정 테스트)
+- **`register.php`**: 회원가입 페이지
+- **`upload.php`**: 파일 업로드 기능 (악성 파일 업로드 실습)
+
+### 📝 게시판 시스템
+- **`board/list.php`**: 게시글 목록 (SQL Injection, XSS 실습)
+- **`board/view.php`**: 게시글 상세보기 (XSS, CSRF 실습)
+- **`board/write.php`**: 게시글 작성 (CSRF 실습)
+
+### 🔌 API 엔드포인트
+- **`api/auth.php`**: 인증 API (JWT 토큰 관리)
+- **`api/board.php`**: 게시판 CRUD API
+- **`api/notice.php`**: 공지사항 조회 API
+- **`api/admin.php`**: 관리자 전용 API
+
+### 🛠️ 시스템 파일
+- **`includes/auth.php`**: 인증 관련 함수 및 권한 체크
+- **`includes/db.php`**: 데이터베이스 연결 설정
+- **`uploads/`**: 업로드된 파일 저장소
+  - `shell.php`, `shell.phtml`: 웹셸 테스트 파일 (⚠️ 교육용)
+  - `phpinfo.php`: PHP 설정 확인용
+
+### 🔧 설정 파일
+- **`docker-compose.yml`**: Docker 서비스 정의
+- **`Dockerfile`**: 커스텀 PHP/Apache 이미지 빌드
+- **`php.ini`**: PHP 설정 (RFI 테스트용 설정 포함)
+- **`init.sql`**: 초기 데이터베이스 스키마 및 계정 생성
 
 ---
 

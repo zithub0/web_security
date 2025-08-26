@@ -13,7 +13,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     'csrf2_protection' => isset($_POST['csrf2']) ? true : false,
                     'sql_protection' => isset($_POST['sql']) ? true : false,
                     'search_sql_protection' => isset($_POST['search_sql']) ? true : false,
-                    'file_upload_protection' => isset($_POST['file_upload']) ? true : false
+                    'file_upload_protection' => isset($_POST['file_upload']) ? true : false,
+                    'lfi_protection' => isset($_POST['lfi']) ? true : false,
+                    'rfi_protection' => isset($_POST['rfi']) ? true : false
                 ];
                 $message = "보안 설정이 저장되었습니다.";
                 break;
@@ -26,7 +28,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     'csrf2_protection' => true,
                     'sql_protection' => true,
                     'search_sql_protection' => true,
-                    'file_upload_protection' => true
+                    'file_upload_protection' => true,
+                    'lfi_protection' => true,
+                    'rfi_protection' => true
                 ];
                 $message = "모든 보안 기능이 활성화되었습니다.";
                 break;
@@ -39,7 +43,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     'csrf2_protection' => false,
                     'sql_protection' => false,
                     'search_sql_protection' => false,
-                    'file_upload_protection' => false
+                    'file_upload_protection' => false,
+                    'lfi_protection' => false,
+                    'rfi_protection' => false
                 ];
                 $message = "모든 보안 기능이 비활성화되었습니다. ⚠️ 위험한 상태입니다!";
                 break;
@@ -52,7 +58,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     'csrf2_protection' => true,
                     'sql_protection' => true,
                     'search_sql_protection' => true,
-                    'file_upload_protection' => true
+                    'file_upload_protection' => true,
+                    'lfi_protection' => true,
+                    'rfi_protection' => true
                 ];
                 $message = "권장 보안 설정이 적용되었습니다.";
                 break;
@@ -69,7 +77,9 @@ if (!isset($_SESSION['security_settings'])) {
         'csrf2_protection' => false,
         'sql_protection' => false,
         'search_sql_protection' => false,
-        'file_upload_protection' => false
+        'file_upload_protection' => false,
+        'lfi_protection' => false,
+        'rfi_protection' => false
     ];
 }
 
@@ -503,6 +513,53 @@ $settings = $_SESSION['security_settings'];
                             </label>
                             <span class="status-indicator <?php echo $settings['file_upload_protection'] ? 'status-on' : 'status-off'; ?>">
                                 <?php echo $settings['file_upload_protection'] ? 'ON' : 'OFF'; ?>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 파일 뷰어 페이지 설정 박스 -->
+            <div style="border: 3px solid #fd7e14; border-radius: 10px; padding: 20px; margin-bottom: 30px; background: linear-gradient(135deg, #f8f9fa 0%, #fff3e0 100%);">
+                <div style="text-align: center; font-size: 20px; font-weight: bold; color: #fd7e14; margin-bottom: 15px; border-bottom: 2px solid #fd7e14; padding-bottom: 10px;">
+                    👁️ 파일 뷰어 페이지 설정
+                </div>
+                <p style="text-align: center; color: #666; font-size: 14px; margin-bottom: 25px;">
+                    파일 뷰어 페이지에서 사용되는 보안 기능들을 설정합니다.
+                </p>
+
+                <!-- LFI 보안 대책 -->
+                <div class="security-section">
+                    <div class="section-title">📁 LFI (Local File Inclusion) 대책</div>
+                    
+                    <div class="security-item">
+                        <div class="security-info">
+                            <div class="security-label">디렉토리 트레버셜 방지 (LFI)</div>
+                            <div class="security-desc">파일 경로에서 '../' 패턴을 차단하여 디렉토리 트레버셜 공격 방지</div>
+                        </div>
+                        <div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" name="lfi" <?php echo $settings['lfi_protection'] ? 'checked' : ''; ?>>
+                                <span class="slider"></span>
+                            </label>
+                            <span class="status-indicator <?php echo $settings['lfi_protection'] ? 'status-on' : 'status-off'; ?>">
+                                <?php echo $settings['lfi_protection'] ? 'ON' : 'OFF'; ?>
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="security-item">
+                        <div class="security-info">
+                            <div class="security-label">원격 파일 포함 방지 (RFI)</div>
+                            <div class="security-desc">http://, https://, ftp:// 등 원격 URL 패턴을 차단하여 RFI 공격 방지</div>
+                        </div>
+                        <div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" name="rfi" <?php echo $settings['rfi_protection'] ? 'checked' : ''; ?>>
+                                <span class="slider"></span>
+                            </label>
+                            <span class="status-indicator <?php echo $settings['rfi_protection'] ? 'status-on' : 'status-off'; ?>">
+                                <?php echo $settings['rfi_protection'] ? 'ON' : 'OFF'; ?>
                             </span>
                         </div>
                     </div>

