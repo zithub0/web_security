@@ -2,48 +2,65 @@
 include_once('includes/db.php');
 session_start();
 
+// 세션 기반 보안 설정 로드
+if (!isset($_SESSION['security_settings'])) {
+    $_SESSION['security_settings'] = [
+        'xss1_protection' => false,
+        'xss2_protection' => false,
+        'csrf1_protection' => false,
+        'csrf2_protection' => false,
+        'sql_protection' => false,
+        'search_sql_protection' => false,
+        'file_upload_protection' => false
+    ];
+}
+
+$settings = $_SESSION['security_settings'];
+$file_upload_protection = $settings['file_upload_protection'];
+
 $is_logged_in = isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true;
 
 if ($is_logged_in && $_SERVER["REQUEST_METHOD"] == "POST" && isset($_FILES['file'])) {
     $target_dir = "uploads/";
     $target_file = $target_dir . basename($_FILES["file"]["name"]);
 
-    // --- 파일 업로드 보안 강화 기능 (현재 주석 처리되어 비활성화됨) ---
-    // 이 코드는 업로드되는 파일의 유형을 제한하여 악성 파일 업로드를 방지합니다.
-    // 연구 목적으로 기능을 확인하려면 아래 주석을 해제하십시오.
+    // 파일 업로드 보안 강화 기능 (토글로 제어)
+    if ($file_upload_protection) {
+        $file_type = strtolower(pathinfo($target_file, PATHINFO_EXTENSION));
+        $allowed_extensions = array("jpg", "jpeg", "png", "gif", "txt", "pdf", "doc", "docx"); // 허용할 확장자 목록
 
-    /*
-    $file_type = strtolower(pathinfo($target_file, PATHINFO_EXTENSION));
-    $allowed_extensions = array("jpg", "jpeg", "png", "gif", "txt", "pdf", "doc", "docx"); // 허용할 확장자 목록
+        // MIME 타입 검사 (더 강력한 보안을 위해)
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        $mime_type = finfo_file($finfo, $_FILES['file']['tmp_name']);
+        finfo_close($finfo);
 
-    // MIME 타입 검사 (더 강력한 보안을 위해)
-    $finfo = finfo_open(FILEINFO_MIME_TYPE);
-    $mime_type = finfo_file($finfo, $_FILES['file']['tmp_name']);
-    finfo_close($finfo);
+        $allowed_mime_types = array(
+            'image/jpeg',
+            'image/png',
+            'image/gif',
+            'text/plain',
+            'application/pdf',
+            'application/msword',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        );
 
-    $allowed_mime_types = array(
-        'image/jpeg',
-        'image/png',
-        'image/gif',
-        'text/plain',
-        'application/pdf',
-        'application/msword',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-    );
-
-    if (!in_array($file_type, $allowed_extensions) || !in_array($mime_type, $allowed_mime_types)) {
-        echo "Sorry, only JPG, JPEG, PNG, GIF, TXT, PDF, DOC, DOCX files are allowed.";
-        // 업로드 중단
-        exit;
-    }
-    */
-    // --- 파일 업로드 보안 강화 기능 끝 ---
-
-    // Path Traversal
-    if (move_uploaded_file($_FILES["file"]["tmp_name"], $target_file)) {
-        $upload_message = '<div class="success-message">✅ 파일 "'. htmlspecialchars( basename( $_FILES["file"]["name"])). '"이 성공적으로 업로드되었습니다.</div>';
+        if (!in_array($file_type, $allowed_extensions) || !in_array($mime_type, $allowed_mime_types)) {
+            $upload_message = '<div class="error-message">❌  허용되지 않는 파일 형식입니다. JPG, JPEG, PNG, GIF, TXT, PDF, DOC, DOCX 파일만 업로드 가능합니다.<br>감지된 MIME 타입: ' . htmlspecialchars($mime_type) . '</div>';
+        } else {
+            // 파일 업로드 진행
+            if (move_uploaded_file($_FILES["file"]["tmp_name"], $target_file)) {
+                $upload_message = '<div class="success-message">✅ 파일 "'. htmlspecialchars( basename( $_FILES["file"]["name"])). '"이 성공적으로 업로드되었습니다. (보안 검사 통과)</div>';
+            } else {
+                $upload_message = '<div class="error-message">❌ 파일 업로드 중 오류가 발생했습니다.</div>';
+            }
+        }
     } else {
-        $upload_message = '<div class="error-message">❌ 파일 업로드 중 오류가 발생했습니다.</div>';
+        // 보안 검사 없이 파일 업로드 (취약한 상태)
+        if (move_uploaded_file($_FILES["file"]["tmp_name"], $target_file)) {
+            $upload_message = '<div class="success-message">✅ 파일 "'. htmlspecialchars( basename( $_FILES["file"]["name"])). '"이 성공적으로 업로드되었습니다. ⚠️ (보안 검사 비활성화 상태)</div>';
+        } else {
+            $upload_message = '<div class="error-message">❌ 파일 업로드 중 오류가 발생했습니다.</div>';
+        }
     }
 }
 ?>
@@ -257,6 +274,25 @@ if ($is_logged_in && $_SERVER["REQUEST_METHOD"] == "POST" && isset($_FILES['file
             <p>• 다양한 파일 형식을 업로드할 수 있습니다.</p>
             <p>• 업로드된 파일은 파일 뷰어에서 확인할 수 있습니다.</p>
             <p>• 이미지 파일과 텍스트 파일은 바로 미리볼 수 있습니다.</p>
+        </div>
+        
+        <!-- 보안 상태 표시 -->
+        <div style="<?php echo $file_upload_protection ? 'background: #d4edda; color: #155724; border: 2px solid #28a745;' : 'background: #f8d7da; color: #721c24; border: 2px solid #dc3545;'; ?> padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: center;">
+            <h4 style="margin-top: 0;">
+                <?php if ($file_upload_protection): ?>
+                    🛡️ 파일 업로드 보안 활성화
+                <?php else: ?>
+                    ⚠️ 파일 업로드 보안 비활성화
+                <?php endif; ?>
+            </h4>
+            <p style="margin-bottom: 0;">
+                <?php if ($file_upload_protection): ?>
+                    파일 확장자 및 MIME 타입 검사가 활성화되어 있습니다. 안전한 파일만 업로드됩니다.
+                <?php else: ?>
+                    <strong>위험:</strong> 모든 파일 타입의 업로드가 허용됩니다. 보안 설정에서 활성화를 권장합니다.
+                <?php endif; ?>
+                <br><small><a href="security.php" style="color: inherit; text-decoration: underline;">보안 설정 변경하기</a></small>
+            </p>
         </div>
         
         <div class="upload-form">

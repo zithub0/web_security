@@ -6,6 +6,7 @@ if ($xss1_protection) {
 }
 
 include_once('../includes/db.php');
+include_once('../includes/auth.php');
 session_start();
 
 // 세션 기반 보안 설정 로드
@@ -15,7 +16,8 @@ if (!isset($_SESSION['security_settings'])) {
         'xss2_protection' => false,
         'csrf1_protection' => false,
         'csrf2_protection' => false,
-        'sql_protection' => false
+        'sql_protection' => false,
+        'search_sql_protection' => false
     ];
 }
 
@@ -70,8 +72,17 @@ if ($post_id <= 0) {
 }
 
 // 특정 게시글 가져오기
-$sql = "SELECT * FROM board WHERE id = $post_id";
-$result = $conn->query($sql);
+if ($sql_protection) {
+    // SQL 인젝션 대책: Prepared Statements 사용
+    $stmt = $conn->prepare("SELECT * FROM posts WHERE id = ?");
+    $stmt->bind_param("i", $post_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+} else {
+    // SQL Injection 취약
+    $sql = "SELECT * FROM posts WHERE id = $post_id";
+    $result = $conn->query($sql);
+}
 
 if ($result->num_rows == 0) {
     header("Location: list.php");
@@ -90,66 +101,21 @@ $comments_result = $conn->query($comments_sql);
 <head>
     <title>게시글 상세보기</title>
     <style>
-        /* 보안 상태 표시기 스타일 */
-        .security-status {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: white;
-            padding: 10px 15px;
-            border: 2px solid #007cba;
-            border-radius: 6px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            z-index: 1000;
+        /* 게시글 상세보기 스타일 */
+        body {
             font-family: Arial, sans-serif;
-            font-size: 12px;
-            text-align: center;
+            margin: 20px;
+            background-color: #f8f9fa;
         }
-        
-        .security-link {
-            display: inline-block;
-            background-color: #007cba;
-            color: white;
-            padding: 8px 12px;
-            text-decoration: none;
-            border-radius: 4px;
-            font-weight: bold;
-            margin-top: 5px;
-        }
-        
-        .security-link:hover {
-            background-color: #0056b3;
-        }
-        
-        .status-summary {
-            font-size: 11px;
-            color: #666;
-            margin-bottom: 5px;
-        }
-        
     </style>
 </head>
 <body>
-    <!-- 보안 상태 표시기 -->
-    <div class="security-status">
-        <div>🔒 보안 상태</div>
-        <div class="status-summary">
-            <?php 
-            $active_count = array_sum($settings);
-            $security_level = ($active_count == 5) ? "안전" : (($active_count >= 3) ? "보통" : "위험");
-            $level_color = ($active_count == 5) ? "#28a745" : (($active_count >= 3) ? "#ffc107" : "#dc3545");
-            echo "<span style='color: $level_color; font-weight: bold;'>$security_level</span> ($active_count/5)";
-            ?>
-        </div>
-        <a href="../security.php" class="security-link">설정 변경</a>
-    </div>
-
     <h2>게시글 상세보기</h2>
 
     <!-- 게시글 상세 내용 -->
     <div style='border: 1px solid #ccc; padding: 20px; margin: 10px 0; background-color: #fff;'>
-        <h3 style='margin-top: 0;'>게시글 #<?php echo $post['id']; ?></h3>
-        <p><strong>작성자:</strong> <?php echo $post['username']; ?></p>
+        <h3 style='margin-top: 0;'><?php echo htmlspecialchars($post['title']); ?></h3>
+        <p><strong>작성자:</strong> <?php echo htmlspecialchars($post['author']); ?></p>
         <p><strong>작성일:</strong> <?php echo $post['created_at']; ?></p>
         <hr>
         <div style='line-height: 1.6;'>
@@ -168,16 +134,32 @@ $comments_result = $conn->query($comments_sql);
         
         <?php
         // 이전 게시글 찾기
-        $prev_sql = "SELECT id FROM board WHERE id < $post_id ORDER BY id DESC LIMIT 1";
-        $prev_result = $conn->query($prev_sql);
+        if ($sql_protection) {
+            $prev_stmt = $conn->prepare("SELECT id FROM posts WHERE id < ? ORDER BY id DESC LIMIT 1");
+            $prev_stmt->bind_param("i", $post_id);
+            $prev_stmt->execute();
+            $prev_result = $prev_stmt->get_result();
+        } else {
+            $prev_sql = "SELECT id FROM posts WHERE id < $post_id ORDER BY id DESC LIMIT 1";
+            $prev_result = $conn->query($prev_sql);
+        }
+        
         if ($prev_result->num_rows > 0) {
             $prev_post = $prev_result->fetch_assoc();
             echo "<a href='view.php?id=" . $prev_post['id'] . "' style='margin-right: 10px; padding: 8px 16px; background-color: #6c757d; color: white; text-decoration: none; border-radius: 4px;'>이전 게시글</a>";
         }
         
         // 다음 게시글 찾기
-        $next_sql = "SELECT id FROM board WHERE id > $post_id ORDER BY id ASC LIMIT 1";
-        $next_result = $conn->query($next_sql);
+        if ($sql_protection) {
+            $next_stmt = $conn->prepare("SELECT id FROM posts WHERE id > ? ORDER BY id ASC LIMIT 1");
+            $next_stmt->bind_param("i", $post_id);
+            $next_stmt->execute();
+            $next_result = $next_stmt->get_result();
+        } else {
+            $next_sql = "SELECT id FROM posts WHERE id > $post_id ORDER BY id ASC LIMIT 1";
+            $next_result = $conn->query($next_sql);
+        }
+        
         if ($next_result->num_rows > 0) {
             $next_post = $next_result->fetch_assoc();
             echo "<a href='view.php?id=" . $next_post['id'] . "' style='padding: 8px 16px; background-color: #6c757d; color: white; text-decoration: none; border-radius: 4px;'>다음 게시글</a>";

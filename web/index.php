@@ -1,6 +1,7 @@
 <?php
 session_start();
 include_once('includes/db.php');
+include_once('includes/auth.php');
 ?>
 <!DOCTYPE html>
 <html lang="ko">
@@ -150,9 +151,18 @@ include_once('includes/db.php');
             </ul>
 
             <div class="nav-user">
-                <?php if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true): ?>
+                <?php if (isLoggedIn()): ?>
                     <div class="user-status">
-                        ✅ <?php echo htmlspecialchars($_SESSION['username'] ?? 'Unknown'); ?>님
+                        <?php 
+                        $role_icons = [
+                            'admin' => '👑',
+                            'user' => '👤', 
+                            'guest' => '👻'
+                        ];
+                        $role_name = getRoleName();
+                        $icon = $role_icons[$role_name] ?? '❓';
+                        echo "$icon " . htmlspecialchars($_SESSION['username'] ?? 'Unknown') . " ($role_name)";
+                        ?>
                     </div>
                     <a href="logout.php" class="nav-link">🚪 로그아웃</a>
                 <?php else: ?>
@@ -170,6 +180,31 @@ include_once('includes/db.php');
                 <h1>웹사이트 메인 페이지</h1>
                 <p>다양한 기능을 제공하는 커뮤니티 웹사이트입니다</p>
             </div>
+
+            <!-- 현재 사용자 권한 정보 -->
+            <?php if (isLoggedIn()): ?>
+            <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+                <h3>현재 권한: <?php echo getRoleName(); ?></h3>
+                <p><strong>사용 가능한 기능:</strong></p>
+                <ul>
+                    <?php foreach (getPermissionInfo() as $permission): ?>
+                        <li><?php echo htmlspecialchars($permission); ?></li>
+                    <?php endforeach; ?>
+                </ul>
+            </div>
+            <?php else: ?>
+            <div style="background: #fff3cd; padding: 20px; border-radius: 10px; margin-bottom: 20px; border: 1px solid #ffeaa7;">
+                <h3>👻 게스트 모드</h3>
+                <p>현재 로그인하지 않은 상태입니다. 제한된 기능만 사용할 수 있습니다.</p>
+                <p><strong>게스트 권한:</strong></p>
+                <ul>
+                    <li>일반 게시글 읽기 전용</li>
+                    <li>파일 다운로드 (제한적)</li>
+                    <li>회원가입 가능</li>
+                </ul>
+                <p><a href="login.php" style="color: #007cba; text-decoration: none; font-weight: bold;">로그인하기 →</a></p>
+            </div>
+            <?php endif; ?>
 
             <div class="footer">
                 <p>

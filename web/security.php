@@ -11,7 +11,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     'xss2_protection' => isset($_POST['xss2']) ? true : false,
                     'csrf1_protection' => isset($_POST['csrf1']) ? true : false,
                     'csrf2_protection' => isset($_POST['csrf2']) ? true : false,
-                    'sql_protection' => isset($_POST['sql']) ? true : false
+                    'sql_protection' => isset($_POST['sql']) ? true : false,
+                    'search_sql_protection' => isset($_POST['search_sql']) ? true : false,
+                    'file_upload_protection' => isset($_POST['file_upload']) ? true : false
                 ];
                 $message = "보안 설정이 저장되었습니다.";
                 break;
@@ -22,7 +24,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     'xss2_protection' => true,
                     'csrf1_protection' => true,
                     'csrf2_protection' => true,
-                    'sql_protection' => true
+                    'sql_protection' => true,
+                    'search_sql_protection' => true,
+                    'file_upload_protection' => true
                 ];
                 $message = "모든 보안 기능이 활성화되었습니다.";
                 break;
@@ -33,7 +37,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     'xss2_protection' => false,
                     'csrf1_protection' => false,
                     'csrf2_protection' => false,
-                    'sql_protection' => false
+                    'sql_protection' => false,
+                    'search_sql_protection' => false,
+                    'file_upload_protection' => false
                 ];
                 $message = "모든 보안 기능이 비활성화되었습니다. ⚠️ 위험한 상태입니다!";
                 break;
@@ -44,7 +50,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     'xss2_protection' => true,
                     'csrf1_protection' => true,
                     'csrf2_protection' => true,
-                    'sql_protection' => true
+                    'sql_protection' => true,
+                    'search_sql_protection' => true,
+                    'file_upload_protection' => true
                 ];
                 $message = "권장 보안 설정이 적용되었습니다.";
                 break;
@@ -59,7 +67,9 @@ if (!isset($_SESSION['security_settings'])) {
         'xss2_protection' => false,
         'csrf1_protection' => false,
         'csrf2_protection' => false,
-        'sql_protection' => false
+        'sql_protection' => false,
+        'search_sql_protection' => false,
+        'file_upload_protection' => false
     ];
 }
 
@@ -335,7 +345,7 @@ $settings = $_SESSION['security_settings'];
             <!-- 게시판 페이지 설정 박스 -->
             <div style="border: 3px solid #007cba; border-radius: 10px; padding: 20px; margin-bottom: 30px; background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);">
                 <div style="text-align: center; font-size: 20px; font-weight: bold; color: #007cba; margin-bottom: 15px; border-bottom: 2px solid #007cba; padding-bottom: 10px;">
-                    📝 게시판 페이지 설정
+                    📝 게시판 뷰 페이지 설정
                 </div>
                 <p style="text-align: center; color: #666; font-size: 14px; margin-bottom: 25px;">
                     게시판 관련 페이지(목록, 상세보기, 댓글)에서 사용되는 보안 기능들을 설정합니다.
@@ -422,7 +432,7 @@ $settings = $_SESSION['security_settings'];
                     <div class="security-item">
                         <div class="security-info">
                             <div class="security-label">SQL 인젝션 방지</div>
-                            <div class="security-desc">Prepared Statements를 사용하여 SQL 인젝션 공격 방지</div>
+                            <div class="security-desc">Prepared Statements를 사용하여 게시글 상세보기 SQL 인젝션 공격 방지</div>
                         </div>
                         <div>
                             <label class="toggle-switch">
@@ -431,6 +441,68 @@ $settings = $_SESSION['security_settings'];
                             </label>
                             <span class="status-indicator <?php echo $settings['sql_protection'] ? 'status-on' : 'status-off'; ?>">
                                 <?php echo $settings['sql_protection'] ? 'ON' : 'OFF'; ?>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 게시판 리스트 페이지 설정 박스 -->
+            <div style="border: 3px solid #28a745; border-radius: 10px; padding: 20px; margin-bottom: 30px; background: linear-gradient(135deg, #f8f9fa 0%, #e8f5e8 100%);">
+                <div style="text-align: center; font-size: 20px; font-weight: bold; color: #28a745; margin-bottom: 15px; border-bottom: 2px solid #28a745; padding-bottom: 10px;">
+                    📋 게시판 리스트 페이지 설정
+                </div>
+                <p style="text-align: center; color: #666; font-size: 14px; margin-bottom: 25px;">
+                    게시판 목록 페이지(검색, 페이징)에서 사용되는 보안 기능들을 설정합니다.
+                </p>
+
+                <!-- SQL Injection 대책 (검색기능) -->
+                <div class="security-section">
+                    <div class="section-title">💉 SQL Injection 대책 (검색기능)</div>
+                    
+                    <div class="security-item">
+                        <div class="security-info">
+                            <div class="security-label">SQL 인젝션 방지 (검색기능)</div>
+                            <div class="security-desc">Prepared Statements를 사용하여 게시글 검색 SQL 인젝션 공격 방지</div>
+                        </div>
+                        <div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" name="search_sql" <?php echo $settings['search_sql_protection'] ? 'checked' : ''; ?>>
+                                <span class="slider"></span>
+                            </label>
+                            <span class="status-indicator <?php echo $settings['search_sql_protection'] ? 'status-on' : 'status-off'; ?>">
+                                <?php echo $settings['search_sql_protection'] ? 'ON' : 'OFF'; ?>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 파일 업로드 페이지 설정 박스 -->
+            <div style="border: 3px solid #dc3545; border-radius: 10px; padding: 20px; margin-bottom: 30px; background: linear-gradient(135deg, #f8f9fa 0%, #ffe8e8 100%);">
+                <div style="text-align: center; font-size: 20px; font-weight: bold; color: #dc3545; margin-bottom: 15px; border-bottom: 2px solid #dc3545; padding-bottom: 10px;">
+                    📤 파일 업로드 페이지 설정
+                </div>
+                <p style="text-align: center; color: #666; font-size: 14px; margin-bottom: 25px;">
+                    파일 업로드 페이지에서 사용되는 보안 기능들을 설정합니다.
+                </p>
+
+                <!-- 파일 업로드 보안 대책 -->
+                <div class="security-section">
+                    <div class="section-title">📁 파일 업로드 보안 대책</div>
+                    
+                    <div class="security-item">
+                        <div class="security-info">
+                            <div class="security-label">파일 타입 검증 (MIME)</div>
+                            <div class="security-desc">업로드되는 파일의 확장자와 MIME 타입을 검사하여 악성 파일 업로드 방지</div>
+                        </div>
+                        <div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" name="file_upload" <?php echo $settings['file_upload_protection'] ? 'checked' : ''; ?>>
+                                <span class="slider"></span>
+                            </label>
+                            <span class="status-indicator <?php echo $settings['file_upload_protection'] ? 'status-on' : 'status-off'; ?>">
+                                <?php echo $settings['file_upload_protection'] ? 'ON' : 'OFF'; ?>
                             </span>
                         </div>
                     </div>

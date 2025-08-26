@@ -9,6 +9,7 @@ if ($xss1_protection) {
 
 
 include_once('../includes/db.php');
+include_once('../includes/auth.php');
 session_start();
 
 // 세션 기반 보안 설정 로드
@@ -18,7 +19,8 @@ if (!isset($_SESSION['security_settings'])) {
         'xss2_protection' => false,
         'csrf1_protection' => false,
         'csrf2_protection' => false,
-        'sql_protection' => false
+        'sql_protection' => false,
+        'search_sql_protection' => false
     ];
 }
 
@@ -28,22 +30,83 @@ $xss2_protection = $settings['xss2_protection'];
 $csrf1_protection = $settings['csrf1_protection'];
 $csrf2_protection = $settings['csrf2_protection'];
 $sql_protection = $settings['sql_protection'];
+$search_sql_protection = $settings['search_sql_protection'];
 
 
-// 페이지네이션 설정 (목록 전용)
+// 검색 기능 처리
+$search_query = isset($_GET['search']) ? $_GET['search'] : '';
+$search_condition = '';
+$search_params = [];
+
+if (!empty($search_query)) {
+    if ($search_sql_protection) {
+        // SQL 인젝션 대책: Prepared Statements 사용
+        $search_condition = " WHERE title LIKE ? OR content LIKE ? OR author LIKE ?";
+        $search_like = "%$search_query%";
+        $search_params = [$search_like, $search_like, $search_like];
+    } else {
+        // 🚨 SQL Injection 취약점: 사용자 입력이 직접 SQL 쿼리에 삽입됨
+        $search_condition = " WHERE title LIKE '%$search_query%' OR content LIKE '%$search_query%' OR author LIKE '%$search_query%'";
+    }
+}
+
+// 페이지네이션 설정
 $posts_per_page = 10; // 페이지당 10개 게시글
 $page = isset($_GET['page']) && is_numeric($_GET['page']) ? (int)$_GET['page'] : 1;
 $offset = ($page - 1) * $posts_per_page;
 
-// 전체 게시글 수 가져오기
-$count_sql = "SELECT COUNT(*) as total FROM board";
-$count_result = $conn->query($count_sql);
+// 전체 게시글 수 가져오기 (검색 조건 포함)
+if (!empty($search_query) && $search_sql_protection) {
+    // Prepared Statement로 카운트 쿼리
+    $count_stmt = $conn->prepare("SELECT COUNT(*) as total FROM posts" . $search_condition);
+    $count_stmt->bind_param("sss", $search_params[0], $search_params[1], $search_params[2]);
+    $count_stmt->execute();
+    $count_result = $count_stmt->get_result();
+} else {
+    // 기존 방식 (취약하거나 검색 없음)
+    $count_sql = "SELECT COUNT(*) as total FROM posts" . $search_condition;
+    $count_result = $conn->query($count_sql);
+}
+
+// SQL 쿼리 실행 실패 시 처리
+if (!$count_result) {
+    echo "<div style='background: #f8d7da; color: #721c24; padding: 15px; border-radius: 5px; margin: 20px 0;'>";
+    echo "<h4>SQL 오류가 발생했습니다!</h4>";
+    echo "<p>오류 메시지: " . htmlspecialchars($conn->error) . "</p>";
+    if (isset($count_sql)) {
+        echo "<p>실행된 쿼리: " . htmlspecialchars($count_sql) . "</p>";
+    }
+    echo "<p><a href='list.php'>게시판 목록으로 돌아가기</a></p>";
+    echo "</div>";
+    exit;
+}
+
 $total_posts = $count_result->fetch_assoc()['total'];
 $total_pages = ceil($total_posts / $posts_per_page);
 
-// 현재 페이지의 게시글 가져오기 (최신순 정렬)
-$sql = "SELECT * FROM board ORDER BY created_at DESC LIMIT $posts_per_page OFFSET $offset";
-$result = $conn->query($sql);
+// 현재 페이지의 게시글 가져오기 (검색 조건 포함, 최신순 정렬)
+if (!empty($search_query) && $search_sql_protection) {
+    // Prepared Statement로 메인 쿼리
+    $main_stmt = $conn->prepare("SELECT * FROM posts" . $search_condition . " ORDER BY created_at DESC LIMIT ? OFFSET ?");
+    $main_stmt->bind_param("sssii", $search_params[0], $search_params[1], $search_params[2], $posts_per_page, $offset);
+    $main_stmt->execute();
+    $result = $main_stmt->get_result();
+} else {
+    // 기존 방식 (취약하거나 검색 없음)
+    $sql = "SELECT * FROM posts" . $search_condition . " ORDER BY created_at DESC LIMIT $posts_per_page OFFSET $offset";
+    $result = $conn->query($sql);
+}
+
+// 메인 쿼리 실행 실패 시 처리
+if (!$result) {
+    echo "<div style='background: #f8d7da; color: #721c24; padding: 15px; border-radius: 5px; margin: 20px 0;'>";
+    echo "<h4>SQL 오류가 발생했습니다!</h4>";
+    echo "<p>오류 메시지: " . htmlspecialchars($conn->error) . "</p>";
+    echo "<p>실행된 쿼리: " . htmlspecialchars($sql) . "</p>";
+    echo "<p><a href='list.php'>게시판 목록으로 돌아가기</a></p>";
+    echo "</div>";
+    exit;
+}
 ?>
 
 <!DOCTYPE html>
@@ -54,11 +117,13 @@ $result = $conn->query($sql);
 <body>
     <h2>게시판 목록</h2>
     
-    <?php if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true): ?>
     <div style="margin-bottom: 20px; text-align: right;">
-        <a href="write.php" style="background-color: #007cba; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">✏️ 새 글 작성</a>
+        <?php if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true): ?>
+            <a href="write.php" style="background-color: #007cba; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">✏️ 새 글 작성</a>
+        <?php else: ?>
+            <a href="../login.php" style="background-color: #6c757d; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">✏️ 새 글 작성 (로그인 필요)</a>
+        <?php endif; ?>
     </div>
-    <?php endif; ?>
 
     <hr>
 
@@ -74,10 +139,12 @@ $result = $conn->query($sql);
             
             // XSS 대책2 : HTML 엔티티 인코딩
             if ($xss2_protection) {
-                echo htmlspecialchars($row["username"]) . "</strong> - ";
+                echo htmlspecialchars($row["title"]) . "</strong><br>";
+                echo "<small>작성자: " . htmlspecialchars($row["author"]) . "</small><br>";
                 echo htmlspecialchars(substr($row["content"], 0, 50)) . (strlen($row["content"]) > 50 ? "..." : "");
             } else {
-                echo $row["username"] . "</strong> - ";
+                echo $row["title"] . "</strong><br>";
+                echo "<small>작성자: " . $row["author"] . "</small><br>";
                 echo substr($row["content"], 0, 50) . (strlen($row["content"]) > 50 ? "..." : "");
             }
             echo " <a href='view.php?id=" . $row["id"] . "' style='color: #007cba; text-decoration: none;'>[상세보기]</a>";
@@ -118,5 +185,47 @@ $result = $conn->query($sql);
         페이지 <?php echo $page; ?> / <?php echo $total_pages; ?> (총 <?php echo $total_posts; ?>개 게시글)
     </p>
     <?php endif; ?>
+
+    <!-- 검색 기능 -->
+    <div style="margin: 30px 0; padding: 20px; border: 2px solid #007cba; border-radius: 10px; background-color: #f0f8ff;">
+        <h3 style="margin-top: 0; color: #007cba; text-align: center;">🔍 게시글 검색</h3>
+        
+        <?php if (!empty($search_query)): ?>
+        <div style="background: #d4edda; color: #155724; padding: 10px; border-radius: 5px; margin-bottom: 15px; text-align: center;">
+            "<strong><?php echo htmlspecialchars($search_query); ?></strong>" 검색 결과: <?php echo $total_posts; ?>개 게시글
+            <a href="list.php" style="margin-left: 10px; color: #155724; text-decoration: underline;">전체 목록 보기</a>
+        </div>
+        <?php endif; ?>
+        
+        <form method="GET" style="text-align: center;">
+            <div style="display: inline-block; margin-right: 10px;">
+                <input type="text" 
+                       name="search" 
+                       value="<?php echo htmlspecialchars($search_query); ?>" 
+                       placeholder="제목, 내용, 작성자로 검색..." 
+                       style="padding: 10px; border: 2px solid #ccc; border-radius: 5px; width: 300px; font-size: 14px;">
+            </div>
+            <button type="submit" 
+                    style="padding: 10px 20px; background-color: #007cba; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 14px; font-weight: bold;">
+                검색
+            </button>
+            <?php if (!empty($search_query)): ?>
+            <a href="list.php" 
+               style="display: inline-block; margin-left: 10px; padding: 10px 20px; background-color: #6c757d; color: white; text-decoration: none; border-radius: 5px; font-size: 14px;">
+                초기화
+            </a>
+            <?php endif; ?>
+        </form>
+        
+        <div style="margin-top: 15px; font-size: 12px; color: #666; text-align: center;">
+            💡 팁: 제목, 내용, 작성자 모든 항목에서 검색됩니다
+        </div>
+        
+        <!-- SQL Injection 취약점 힌트 (개발/테스트용) -->
+        <div style="margin-top: 10px; font-size: 11px; color: #dc3545; text-align: center; font-style: italic;">
+            ⚠️ 보안 테스트: 이 검색 기능은 의도적으로 SQL Injection에 취약하게 구현되었습니다
+        </div>
+    </div>
+
 </body>
 </html>
