@@ -9,11 +9,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $_SESSION['security_settings'] = [
                     'xss1_protection' => isset($_POST['xss1']) ? true : false,
                     'xss2_protection' => isset($_POST['xss2']) ? true : false,
-                    'csrf1_protection' => isset($_POST['csrf1']) ? true : false,
-                    'csrf2_protection' => isset($_POST['csrf2']) ? true : false,
+                    'csrf_protection' => isset($_POST['csrf']) ? true : false,
                     'sql_protection' => isset($_POST['sql']) ? true : false,
                     'search_sql_protection' => isset($_POST['search_sql']) ? true : false,
                     'file_upload_protection' => isset($_POST['file_upload']) ? true : false,
+                    'file_extension_check' => isset($_POST['file_extension']) ? true : false,
+                    'file_mime_check' => isset($_POST['file_mime']) ? true : false,
                     'lfi_protection' => isset($_POST['lfi']) ? true : false,
                     'rfi_protection' => isset($_POST['rfi']) ? true : false
                 ];
@@ -24,11 +25,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $_SESSION['security_settings'] = [
                     'xss1_protection' => true,
                     'xss2_protection' => true,
-                    'csrf1_protection' => true,
-                    'csrf2_protection' => true,
+                    'csrf_protection' => true,
                     'sql_protection' => true,
                     'search_sql_protection' => true,
                     'file_upload_protection' => true,
+                    'file_extension_check' => true,
+                    'file_mime_check' => true,
                     'lfi_protection' => true,
                     'rfi_protection' => true
                 ];
@@ -39,11 +41,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $_SESSION['security_settings'] = [
                     'xss1_protection' => false,
                     'xss2_protection' => false,
-                    'csrf1_protection' => false,
-                    'csrf2_protection' => false,
+                    'csrf_protection' => false,
                     'sql_protection' => false,
                     'search_sql_protection' => false,
                     'file_upload_protection' => false,
+                    'file_extension_check' => false,
+                    'file_mime_check' => false,
                     'lfi_protection' => false,
                     'rfi_protection' => false
                 ];
@@ -54,11 +57,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $_SESSION['security_settings'] = [
                     'xss1_protection' => true,
                     'xss2_protection' => true,
-                    'csrf1_protection' => true,
-                    'csrf2_protection' => true,
+                    'csrf_protection' => true,
                     'sql_protection' => true,
                     'search_sql_protection' => true,
                     'file_upload_protection' => true,
+                    'file_extension_check' => true,
+                    'file_mime_check' => true,
                     'lfi_protection' => true,
                     'rfi_protection' => true
                 ];
@@ -73,11 +77,12 @@ if (!isset($_SESSION['security_settings'])) {
     $_SESSION['security_settings'] = [
         'xss1_protection' => false,
         'xss2_protection' => false,
-        'csrf1_protection' => false,
-        'csrf2_protection' => false,
+        'csrf_protection' => false,
         'sql_protection' => false,
         'search_sql_protection' => false,
         'file_upload_protection' => false,
+        'file_extension_check' => false,
+        'file_mime_check' => false,
         'lfi_protection' => false,
         'rfi_protection' => false
     ];
@@ -361,6 +366,39 @@ $settings = $_SESSION['security_settings'];
                     게시판 관련 페이지(목록, 상세보기, 댓글)에서 사용되는 보안 기능들을 설정합니다.
                 </p>
 
+
+
+                <!-- SQL Injection 대책 -->
+                <div class="security-section">
+                    <div class="section-title">💉 SQL Injection 대책</div>
+                    
+                    <div class="security-item">
+                        <div class="security-info">
+                            <div class="security-label">SQL 인젝션 방지</div>
+                            <div class="security-desc">Prepared Statements를 사용하여 게시글 상세보기 SQL 인젝션 공격 방지</div>
+                        </div>
+                        <div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" name="sql" <?php echo $settings['sql_protection'] ? 'checked' : ''; ?>>
+                                <span class="slider"></span>
+                            </label>
+                            <span class="status-indicator <?php echo $settings['sql_protection'] ? 'status-on' : 'status-off'; ?>">
+                                <?php echo $settings['sql_protection'] ? 'ON' : 'OFF'; ?>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 게시판 통합 페이지 설정 박스 -->
+            <div style="border: 3px solid #6f42c1; border-radius: 10px; padding: 20px; margin-bottom: 30px; background: linear-gradient(135deg, #f8f9fa 0%, #f3e5f5 100%);">
+                <div style="text-align: center; font-size: 20px; font-weight: bold; color: #6f42c1; margin-bottom: 15px; border-bottom: 2px solid #6f42c1; padding-bottom: 10px;">
+                    🔗 게시판 통합 페이지 설정
+                </div>
+                <p style="text-align: center; color: #666; font-size: 14px; margin-bottom: 25px;">
+                    게시판 전체 페이지(글 작성, 댓글 작성 등)에서 사용되는 통합 보안 기능들을 설정합니다.
+                </p>
+
                 <!-- XSS 대책 -->
                 <div class="security-section">
                     <div class="section-title">🚫 XSS (Cross-Site Scripting) 대책</div>
@@ -368,7 +406,7 @@ $settings = $_SESSION['security_settings'];
                     <div class="security-item">
                         <div class="security-info">
                             <div class="security-label">XSS 대책1 - 응답 인코딩</div>
-                            <div class="security-desc">HTTP 응답 헤더에 문자 인코딩을 지정하여 XSS 공격을 방지</div>
+                            <div class="security-desc">모든 게시판 페이지에서 HTTP 응답 헤더에 문자 인코딩을 지정하여 XSS 공격을 방지</div>
                         </div>
                         <div>
                             <label class="toggle-switch">
@@ -384,7 +422,7 @@ $settings = $_SESSION['security_settings'];
                     <div class="security-item">
                         <div class="security-info">
                             <div class="security-label">XSS 대책2 - 출력 필터링</div>
-                            <div class="security-desc">htmlspecialchars()를 사용하여 HTML 특수문자를 안전하게 처리</div>
+                            <div class="security-desc">게시글, 댓글, 목록에서 htmlspecialchars()를 사용하여 HTML 특수문자를 안전하게 처리</div>
                         </div>
                         <div>
                             <label class="toggle-switch">
@@ -404,53 +442,16 @@ $settings = $_SESSION['security_settings'];
                     
                     <div class="security-item">
                         <div class="security-info">
-                            <div class="security-label">CSRF 대책1 - 토큰 생성</div>
-                            <div class="security-desc">폼에 CSRF 토큰을 생성하여 삽입</div>
+                            <div class="security-label">CSRF 토큰 보호</div>
+                            <div class="security-desc">게시글 작성, 댓글 작성 시 CSRF 토큰 생성 + 검증하여 위조 요청 차단 (POST 요청 보호)</div>
                         </div>
                         <div>
                             <label class="toggle-switch">
-                                <input type="checkbox" name="csrf1" <?php echo $settings['csrf1_protection'] ? 'checked' : ''; ?>>
+                                <input type="checkbox" name="csrf" <?php echo $settings['csrf_protection'] ? 'checked' : ''; ?>>
                                 <span class="slider"></span>
                             </label>
-                            <span class="status-indicator <?php echo $settings['csrf1_protection'] ? 'status-on' : 'status-off'; ?>">
-                                <?php echo $settings['csrf1_protection'] ? 'ON' : 'OFF'; ?>
-                            </span>
-                        </div>
-                    </div>
-                    
-                    <div class="security-item">
-                        <div class="security-info">
-                            <div class="security-label">CSRF 대책2 - 토큰 검증</div>
-                            <div class="security-desc">POST 요청 시 CSRF 토큰을 검증하여 위조 요청 차단</div>
-                        </div>
-                        <div>
-                            <label class="toggle-switch">
-                                <input type="checkbox" name="csrf2" <?php echo $settings['csrf2_protection'] ? 'checked' : ''; ?>>
-                                <span class="slider"></span>
-                            </label>
-                            <span class="status-indicator <?php echo $settings['csrf2_protection'] ? 'status-on' : 'status-off'; ?>">
-                                <?php echo $settings['csrf2_protection'] ? 'ON' : 'OFF'; ?>
-                            </span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- SQL Injection 대책 -->
-                <div class="security-section">
-                    <div class="section-title">💉 SQL Injection 대책</div>
-                    
-                    <div class="security-item">
-                        <div class="security-info">
-                            <div class="security-label">SQL 인젝션 방지</div>
-                            <div class="security-desc">Prepared Statements를 사용하여 게시글 상세보기 SQL 인젝션 공격 방지</div>
-                        </div>
-                        <div>
-                            <label class="toggle-switch">
-                                <input type="checkbox" name="sql" <?php echo $settings['sql_protection'] ? 'checked' : ''; ?>>
-                                <span class="slider"></span>
-                            </label>
-                            <span class="status-indicator <?php echo $settings['sql_protection'] ? 'status-on' : 'status-off'; ?>">
-                                <?php echo $settings['sql_protection'] ? 'ON' : 'OFF'; ?>
+                            <span class="status-indicator <?php echo $settings['csrf_protection'] ? 'status-on' : 'status-off'; ?>">
+                                <?php echo $settings['csrf_protection'] ? 'ON' : 'OFF'; ?>
                             </span>
                         </div>
                     </div>
@@ -501,18 +502,35 @@ $settings = $_SESSION['security_settings'];
                 <div class="security-section">
                     <div class="section-title">📁 파일 업로드 보안 대책</div>
                     
+                    
                     <div class="security-item">
                         <div class="security-info">
-                            <div class="security-label">파일 타입 검증 (MIME)</div>
-                            <div class="security-desc">업로드되는 파일의 확장자와 MIME 타입을 검사하여 악성 파일 업로드 방지</div>
+                            <div class="security-label">파일 확장자 검사</div>
+                            <div class="security-desc">업로드 파일의 확장자를 검사하여 허용된 확장자만 업로드 허용 (jpg, jpeg, png, gif, txt, pdf, doc, docx)</div>
                         </div>
                         <div>
                             <label class="toggle-switch">
-                                <input type="checkbox" name="file_upload" <?php echo $settings['file_upload_protection'] ? 'checked' : ''; ?>>
+                                <input type="checkbox" name="file_extension" <?php echo $settings['file_extension_check'] ? 'checked' : ''; ?>>
                                 <span class="slider"></span>
                             </label>
-                            <span class="status-indicator <?php echo $settings['file_upload_protection'] ? 'status-on' : 'status-off'; ?>">
-                                <?php echo $settings['file_upload_protection'] ? 'ON' : 'OFF'; ?>
+                            <span class="status-indicator <?php echo $settings['file_extension_check'] ? 'status-on' : 'status-off'; ?>">
+                                <?php echo $settings['file_extension_check'] ? 'ON' : 'OFF'; ?>
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="security-item">
+                        <div class="security-info">
+                            <div class="security-label">MIME 타입 검사</div>
+                            <div class="security-desc">업로드 파일의 실제 MIME 타입을 검사하여 파일 위장 공격 방지</div>
+                        </div>
+                        <div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" name="file_mime" <?php echo $settings['file_mime_check'] ? 'checked' : ''; ?>>
+                                <span class="slider"></span>
+                            </label>
+                            <span class="status-indicator <?php echo $settings['file_mime_check'] ? 'status-on' : 'status-off'; ?>">
+                                <?php echo $settings['file_mime_check'] ? 'ON' : 'OFF'; ?>
                             </span>
                         </div>
                     </div>
@@ -534,8 +552,8 @@ $settings = $_SESSION['security_settings'];
                     
                     <div class="security-item">
                         <div class="security-info">
-                            <div class="security-label">디렉토리 트레버셜 방지 (LFI)</div>
-                            <div class="security-desc">파일 경로에서 '../' 패턴을 차단하여 디렉토리 트레버셜 공격 방지</div>
+                            <div class="security-label">디렉토리 트레버셜 방지</div>
+                            <div class="security-desc">파일 경로에서 '../' 패턴을 차단하여 로컬 파일 접근 공격 방지</div>
                         </div>
                         <div>
                             <label class="toggle-switch">
@@ -547,10 +565,15 @@ $settings = $_SESSION['security_settings'];
                             </span>
                         </div>
                     </div>
+                </div>
+
+                <!-- RFI 보안 대책 -->
+                <div class="security-section">
+                    <div class="section-title">🌐 RFI (Remote File Inclusion) 대책</div>
                     
                     <div class="security-item">
                         <div class="security-info">
-                            <div class="security-label">원격 파일 포함 방지 (RFI)</div>
+                            <div class="security-label">원격 파일 포함 방지</div>
                             <div class="security-desc">http://, https://, ftp:// 등 원격 URL 패턴을 차단하여 RFI 공격 방지</div>
                         </div>
                         <div>

@@ -1,13 +1,4 @@
 <?php
-
-
-//XSS 대책1 : 응답의 문자 인코딩 지정
-if ($xss1_protection) {
-    header("Content-Type: text/html; charset=UTF-8");
-}
-
-
-
 include_once('../includes/db.php');
 include_once('../includes/auth.php');
 session_start();
@@ -17,8 +8,7 @@ if (!isset($_SESSION['security_settings'])) {
     $_SESSION['security_settings'] = [
         'xss1_protection' => false,
         'xss2_protection' => false,
-        'csrf1_protection' => false,
-        'csrf2_protection' => false,
+        'csrf_protection' => false,
         'sql_protection' => false,
         'search_sql_protection' => false
     ];
@@ -27,10 +17,14 @@ if (!isset($_SESSION['security_settings'])) {
 $settings = $_SESSION['security_settings'];
 $xss1_protection = $settings['xss1_protection'];
 $xss2_protection = $settings['xss2_protection'];
-$csrf1_protection = $settings['csrf1_protection'];
-$csrf2_protection = $settings['csrf2_protection'];
+$csrf_protection = $settings['csrf_protection'];
 $sql_protection = $settings['sql_protection'];
 $search_sql_protection = $settings['search_sql_protection'];
+
+//XSS 대책1 : 응답의 문자 인코딩 지정
+if ($xss1_protection) {
+    header("Content-Type: text/html; charset=UTF-8");
+}
 
 
 // 검색 기능 처리
@@ -192,7 +186,11 @@ if (!$result) {
         
         <?php if (!empty($search_query)): ?>
         <div style="background: #d4edda; color: #155724; padding: 10px; border-radius: 5px; margin-bottom: 15px; text-align: center;">
-            "<strong><?php echo htmlspecialchars($search_query); ?></strong>" 검색 결과: <?php echo $total_posts; ?>개 게시글
+            <?php if ($xss2_protection): ?>
+                "<strong><?php echo htmlspecialchars($search_query, ENT_QUOTES, 'UTF-8'); ?></strong>" 검색 결과: <?php echo $total_posts; ?>개 게시글
+            <?php else: ?>
+                "<strong><?php echo $search_query; ?></strong>" 검색 결과: <?php echo $total_posts; ?>개 게시글 <!-- Reflected XSS 취약점 -->
+            <?php endif; ?>
             <a href="list.php" style="margin-left: 10px; color: #155724; text-decoration: underline;">전체 목록 보기</a>
         </div>
         <?php endif; ?>
@@ -201,7 +199,7 @@ if (!$result) {
             <div style="display: inline-block; margin-right: 10px;">
                 <input type="text" 
                        name="search" 
-                       value="<?php echo htmlspecialchars($search_query); ?>" 
+                       value="<?php echo $xss2_protection ? htmlspecialchars($search_query, ENT_QUOTES, 'UTF-8') : $search_query; ?>" 
                        placeholder="제목, 내용, 작성자로 검색..." 
                        style="padding: 10px; border: 2px solid #ccc; border-radius: 5px; width: 300px; font-size: 14px;">
             </div>

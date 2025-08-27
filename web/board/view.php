@@ -1,10 +1,4 @@
 <?php
-
-//XSS 대책1 : 응답의 문자 인코딩 지정
-if ($xss1_protection) {
-    header("Content-Type: text/html; charset=UTF-8");
-}
-
 include_once('../includes/db.php');
 include_once('../includes/auth.php');
 session_start();
@@ -14,8 +8,7 @@ if (!isset($_SESSION['security_settings'])) {
     $_SESSION['security_settings'] = [
         'xss1_protection' => false,
         'xss2_protection' => false,
-        'csrf1_protection' => false,
-        'csrf2_protection' => false,
+        'csrf_protection' => false,
         'sql_protection' => false,
         'search_sql_protection' => false
     ];
@@ -24,14 +17,18 @@ if (!isset($_SESSION['security_settings'])) {
 $settings = $_SESSION['security_settings'];
 $xss1_protection = $settings['xss1_protection'];
 $xss2_protection = $settings['xss2_protection'];
-$csrf1_protection = $settings['csrf1_protection'];
-$csrf2_protection = $settings['csrf2_protection'];
+$csrf_protection = $settings['csrf_protection'];
 $sql_protection = $settings['sql_protection'];
+
+//XSS 대책1 : 응답의 문자 인코딩 지정
+if ($xss1_protection) {
+    header("Content-Type: text/html; charset=UTF-8");
+}
 
 if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
     if ($_SERVER["REQUEST_METHOD"] == "POST") {
-        // CSRF 대책 2: POST 요청 시 토큰 검증
-        if ($csrf2_protection) {
+        // CSRF 대책: POST 요청 시 토큰 검증
+        if ($csrf_protection) {
             if (!isset($_POST['token']) || $_POST['token'] !== $_SESSION['token']) {
                 die('CSRF token validation failed.');
             }
@@ -200,8 +197,8 @@ $comments_result = $conn->query($comments_sql);
             <h4 style="margin-top: 0; color: #007cba;">댓글 작성</h4>
             <form method="post">
                 <?php
-                // CSRF 대책 1: 폼에 숨겨진 토큰 추가 (댓글용)
-                if ($csrf1_protection) {
+                // CSRF 대책: 폼에 숨겨진 토큰 추가 (댓글용)
+                if ($csrf_protection) {
                     if (empty($_SESSION['token'])) {
                         $_SESSION['token'] = bin2hex(random_bytes(32));
                     }

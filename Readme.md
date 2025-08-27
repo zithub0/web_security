@@ -10,10 +10,11 @@
 ```
 web_security/
 ├── docker-compose.yml          # Docker 컨테이너 오케스트레이션 설정
-├── Dockerfile                  # 커스텀 PHP/Apache 이미지 빌드 설정
-├── custom-apache.conf          # Apache 웹서버 설정
-├── php.ini                     # PHP 설정 (RFI 테스트용 allow_url_include 활성화)
-├── init.sql                    # MySQL 초기 데이터베이스 스키마 및 데이터
+├── config/                     # 컨테이너 설정 파일들
+│   ├── Dockerfile             # 커스텀 PHP/Apache 이미지 빌드 설정
+│   ├── custom-apache.conf     # Apache 웹서버 설정
+│   ├── php.ini                # PHP 설정 (RFI 테스트용 allow_url_include 활성화)
+│   └── init.sql               # MySQL 초기 데이터베이스 스키마 및 데이터
 ├── history/                    # 작업 이력 문서
 └── web/                        # 웹 애플리케이션 소스 코드
     ├── index.php               # 메인 대시보드 페이지
@@ -82,10 +83,11 @@ web_security/
   - `phpinfo.php`: PHP 설정 확인용
 
 ### 🔧 설정 파일
-- **`docker-compose.yml`**: Docker 서비스 정의
-- **`Dockerfile`**: 커스텀 PHP/Apache 이미지 빌드
-- **`php.ini`**: PHP 설정 (RFI 테스트용 설정 포함)
-- **`init.sql`**: 초기 데이터베이스 스키마 및 계정 생성
+- **`docker-compose.yml`**: Docker 서비스 오케스트레이션 정의 (프로젝트 루트)
+- **`config/Dockerfile`**: 커스텀 PHP/Apache 이미지 빌드 설정
+- **`config/custom-apache.conf`**: Apache 웹서버 가상 호스트 설정
+- **`config/php.ini`**: PHP 런타임 설정 (RFI 테스트용 설정 포함)
+- **`config/init.sql`**: MySQL 초기 데이터베이스 스키마 및 계정 생성
 
 ---
 
