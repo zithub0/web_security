@@ -142,6 +142,15 @@ if (!$result) {
                 echo substr($row["content"], 0, 50) . (strlen($row["content"]) > 50 ? "..." : "");
             }
             echo " <a href='view.php?id=" . $row["id"] . "' style='color: #007cba; text-decoration: none;'>[상세보기]</a>";
+            
+            // 수정/삭제 버튼 (작성자 본인이거나 관리자인 경우)
+            if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
+                if ($_SESSION['username'] === $row['author'] || $_SESSION['role_name'] === 'admin') {
+                    echo " <a href='edit.php?id=" . $row["id"] . "' style='color: #28a745; text-decoration: none; font-size: 12px;'>[수정]</a>";
+                    echo " <a href='delete.php?id=" . $row["id"] . "' style='color: #dc3545; text-decoration: none; font-size: 12px;' onclick='return confirm(\"정말로 이 게시글을 삭제하시겠습니까?\")'>[삭제]</a>";
+                }
+            }
+            
             echo "<br><small style='color: #666;'>작성일: " . $row["created_at"] . "</small>";
             echo "</li>";
             $post_number++;

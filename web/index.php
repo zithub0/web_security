@@ -140,6 +140,31 @@ include_once('includes/auth.php');
     </style>
 </head>
 <body>
+    <?php
+    // 에러 메시지 처리
+    $error_message = '';
+    if (isset($_GET['error'])) {
+        switch ($_GET['error']) {
+            case 'access_denied':
+                $error_message = '⚠️ 접근이 거부되었습니다. 관리자 권한이 필요합니다.';
+                break;
+            case 'login_required':
+                $error_message = '⚠️ 로그인이 필요합니다.';
+                break;
+            case 'insufficient_permissions':
+                $required = isset($_GET['required']) ? $_GET['required'] : '관리자';
+                $error_message = "⚠️ 권한이 부족합니다. {$required} 권한이 필요합니다.";
+                break;
+        }
+    }
+    ?>
+
+    <?php if (!empty($error_message)): ?>
+    <div style="background: #f8d7da; color: #721c24; padding: 15px; text-align: center; border-bottom: 1px solid #f5c6cb;">
+        <strong><?php echo $error_message; ?></strong>
+    </div>
+    <?php endif; ?>
+
     <nav class="navbar">
         <div class="nav-container">
             <a href="index.php" class="nav-brand">커뮤니티 웹사이트</a>

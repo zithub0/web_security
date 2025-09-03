@@ -3,6 +3,18 @@
 
 USE webapp;
 
+-- =============================================================================
+-- 데이터 초기화 (시작 시 기존 데이터 모두 삭제)
+-- =============================================================================
+SET FOREIGN_KEY_CHECKS = 0;
+
+DROP TABLE IF EXISTS comments;
+DROP TABLE IF EXISTS posts;
+DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS roles;
+
+SET FOREIGN_KEY_CHECKS = 1;
+
 -- 권한 테이블 생성
 CREATE TABLE IF NOT EXISTS roles (
     id INT PRIMARY KEY AUTO_INCREMENT,

@@ -1,5 +1,17 @@
 <?php
+include_once('includes/auth.php');
 session_start();
+
+// 관리자 권한 체크
+if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
+    header("Location: login.php?error=login_required");
+    exit;
+}
+
+if (!isset($_SESSION['role_name']) || $_SESSION['role_name'] !== 'admin') {
+    header("Location: index.php?error=access_denied");
+    exit;
+}
 
 // 보안 설정 처리
 if ($_SERVER["REQUEST_METHOD"] == "POST") {

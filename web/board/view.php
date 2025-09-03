@@ -129,6 +129,13 @@ $comments_result = $conn->query($comments_sql);
     <div style="margin: 20px 0;">
         <a href="list.php" style="display: inline-block; margin-right: 10px; padding: 8px 16px; background-color: #007cba; color: white; text-decoration: none; border-radius: 4px;">목록으로 돌아가기</a>
         
+        <?php if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true): ?>
+            <?php if ($_SESSION['username'] === $post['author'] || $_SESSION['role_name'] === 'admin'): ?>
+                <a href="edit.php?id=<?php echo $post['id']; ?>" style="display: inline-block; margin-right: 10px; padding: 8px 16px; background-color: #28a745; color: white; text-decoration: none; border-radius: 4px;">✏️ 수정</a>
+                <a href="delete.php?id=<?php echo $post['id']; ?>" style="display: inline-block; margin-right: 10px; padding: 8px 16px; background-color: #dc3545; color: white; text-decoration: none; border-radius: 4px;" onclick="return confirm('정말로 이 게시글을 삭제하시겠습니까?');">🗑️ 삭제</a>
+            <?php endif; ?>
+        <?php endif; ?>
+        
         <?php
         // 이전 게시글 찾기
         if ($sql_protection) {
@@ -173,9 +180,19 @@ $comments_result = $conn->query($comments_sql);
             <?php if ($comments_result->num_rows > 0): ?>
                 <?php while($comment = $comments_result->fetch_assoc()): ?>
                     <div style="border: 1px solid #ddd; padding: 12px; margin: 8px 0; border-radius: 4px; background-color: #f9f9f9;">
-                        <div style="margin-bottom: 8px;">
-                            <strong style="color: #007cba;"><?php echo $comment['username']; ?></strong>
-                            <small style="color: #666; margin-left: 10px;"><?php echo $comment['created_at']; ?></small>
+                        <div style="margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <strong style="color: #007cba;"><?php echo $comment['username']; ?></strong>
+                                <small style="color: #666; margin-left: 10px;"><?php echo $comment['created_at']; ?></small>
+                            </div>
+                            <?php if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true): ?>
+                                <?php if ($_SESSION['username'] === $comment['username'] || $_SESSION['role_name'] === 'admin'): ?>
+                                    <div style="font-size: 12px;">
+                                        <a href="edit_comment.php?id=<?php echo $comment['id']; ?>&post_id=<?php echo $post_id; ?>" style="color: #28a745; text-decoration: none; margin-right: 10px;">수정</a>
+                                        <a href="delete_comment.php?id=<?php echo $comment['id']; ?>&post_id=<?php echo $post_id; ?>" style="color: #dc3545; text-decoration: none;" onclick="return confirm('정말로 이 댓글을 삭제하시겠습니까?');">삭제</a>
+                                    </div>
+                                <?php endif; ?>
+                            <?php endif; ?>
                         </div>
                         <div style="line-height: 1.4;">
                             <?php if ($xss2_protection): ?>
